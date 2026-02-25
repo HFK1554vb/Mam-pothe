@@ -140,7 +140,7 @@ task.wait(4)
 local tweenOut = TweenService:Create(
 	frame,
 	TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-	{Position = UDim2.new(0.5, -210, -0.05, 0)}
+	{Position = UDim2.new(0.5, -210, -0.02, 0)}
 )
 
 tweenOut:Play()
