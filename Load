@@ -3,93 +3,120 @@ local URL = "https://raw.githubusercontent.com/HFK1554vb/Mam-pothe/main/Teleport
 -- Xoá GUI cũ nếu có
 local core = game:GetService("CoreGui")
 if core:FindFirstChild("TeleportAutoLoader") then
-    core.TeleportAutoLoader:Destroy()
+	core.TeleportAutoLoader:Destroy()
 end
 
--- GUI tối giản
+-- GUI Loading
 local gui = Instance.new("ScreenGui")
 gui.Name = "TeleportAutoLoader"
 gui.ResetOnSpawn = false
 gui.Parent = core
 
 local label = Instance.new("TextLabel")
-label.Size = UDim2.new(0, 220, 0, 60)
-label.Position = UDim2.new(0.5, -110, 0.4, 0)
+label.Size = UDim2.new(0, 300, 0, 60) -- dài hơn
+label.Position = UDim2.new(0.5, -150, 0.4, 0)
 label.BackgroundColor3 = Color3.fromRGB(25,25,25)
 label.TextColor3 = Color3.new(1,1,1)
 label.TextScaled = true
-label.Text = "Loading..."
+label.Text = "Đang tải Teleport..."
+label.Font = Enum.Font.GothamBold
 label.Parent = gui
 
 Instance.new("UICorner", label).CornerRadius = UDim.new(0,15)
 
--- LOAD NGAY LẬP TỨC
+-- LOAD
 local success, err = pcall(function()
-    loadstring(game:HttpGet(URL))()
+	loadstring(game:HttpGet(URL))()
 end)
 
--- Huỷ GUI ngay sau khi load xong
+-- Xoá loading
 gui:Destroy()
 
 if not success then
-    warn(err)
+	warn(err)
 end
+
+-- ===============================
+-- THÔNG BÁO CUỐI
+-- ===============================
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+
+-- Xoá nếu tồn tại
+if player.PlayerGui:FindFirstChild("HFK_Notification") then
+	player.PlayerGui.HFK_Notification:Destroy()
+end
+
+local notifyGui = Instance.new("ScreenGui")
+notifyGui.Name = "HFK_Notification"
+notifyGui.ResetOnSpawn = false
+notifyGui.Parent = player.PlayerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 420, 0, 60)
+frame.Position = UDim2.new(0.5, -210, -0.2, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.BorderSizePixel = 0
+frame.Parent = notifyGui
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+-- Gradient đổi màu
+local gradient = Instance.new("UIGradient")
+gradient.Color = success and ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,200,100)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(0,120,255))
+} or ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(200,0,0)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(120,0,0))
+}
+gradient.Rotation = 0
+gradient.Parent = frame
+
+-- Text
+local text = Instance.new("TextLabel")
+text.Size = UDim2.new(1, -20, 1, 0)
+text.Position = UDim2.new(0, 10, 0, 0)
+text.BackgroundTransparency = 1
+text.Text = success and "Phiên bản 1 đã tải thành công" or "Tải thất bại"
+text.TextColor3 = Color3.new(1,1,1)
+text.TextScaled = true
+text.Font = Enum.Font.GothamBold
+text.Parent = frame
+
+-- Animation vào
+local tweenIn = TweenService:Create(
+	frame,
+	TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+	{Position = UDim2.new(0.5, -210, 0.1, 0)}
+)
+tweenIn:Play()
+
+-- Animation đổi màu liên tục
 task.spawn(function()
-
-    --// Services
-    local TweenService = game:GetService("TweenService")
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-
-    -- Xoá nếu đã tồn tại
-    if player.PlayerGui:FindFirstChild("HFK_Notification") then
-        player.PlayerGui.HFK_Notification:Destroy()
-    end
-
-    --// GUI
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "HFK_Notification"
-    gui.ResetOnSpawn = false
-    gui.Parent = player.PlayerGui
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 300, 0, 60)
-    frame.Position = UDim2.new(0.5, -150, -0.2, 0)
-    frame.BackgroundColor3 = success and Color3.fromRGB(40,120,40) or Color3.fromRGB(120,40,40)
-    frame.BorderSizePixel = 0
-    frame.Parent = gui
-
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
-
-    local text = Instance.new("TextLabel")
-    text.Size = UDim2.new(1, -20, 1, 0)
-    text.Position = UDim2.new(0, 10, 0, 0)
-    text.BackgroundTransparency = 1
-    text.Text = success and "Loaded Successfully" or "Load Failed"
-    text.TextColor3 = Color3.new(1,1,1)
-    text.TextScaled = true
-    text.Font = Enum.Font.GothamBold
-    text.Parent = frame
-
-    local tweenIn = TweenService:Create(
-        frame,
-        TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        {Position = UDim2.new(0.5, -150, 0.1, 0)}
-    )
-
-    tweenIn:Play()
-
-    task.wait(3)
-
-    local tweenOut = TweenService:Create(
-        frame,
-        TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-        {Position = UDim2.new(0.5, -150, -0.2, 0)}
-    )
-
-    tweenOut:Play()
-    tweenOut.Completed:Wait()
-
-    gui:Destroy()
-
+	while frame.Parent do
+		local tween = TweenService:Create(
+			gradient,
+			TweenInfo.new(2, Enum.EasingStyle.Linear),
+			{Rotation = gradient.Rotation + 180}
+		)
+		tween:Play()
+		tween.Completed:Wait()
+	end
 end)
+
+task.wait(4)
+
+-- Animation ra
+local tweenOut = TweenService:Create(
+	frame,
+	TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+	{Position = UDim2.new(0.5, -210, -0.2, 0)}
+)
+
+tweenOut:Play()
+tweenOut.Completed:Wait()
+
+notifyGui:Destroy()
