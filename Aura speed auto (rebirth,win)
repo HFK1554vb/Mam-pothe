@@ -1,0 +1,112 @@
+local Players = game:GetService("Players")
+local player = Players["98718mmj"]
+local map = workspace:WaitForChild("Map")
+
+local function getCharacter()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char,
+           char:WaitForChild("HumanoidRootPart"),
+           char:WaitForChild("Humanoid")
+end
+
+local char, hrp, humanoid = getCharacter()
+
+player.CharacterAdded:Connect(function()
+    char, hrp, humanoid = getCharacter()
+end)
+
+-- ===== TELEPORT =====
+
+local function teleportTo(part, offset)
+    if hrp then
+        hrp.CFrame = CFrame.new(part.Position + offset)
+    end
+end
+
+local function getHighestStage()
+    local highest = nil
+    local highestNumber = 0
+    local offset = Vector3.new(-10, -8, 0)
+
+    for _, child in pairs(map:GetChildren()) do
+        if child:IsA("BasePart") then
+            local number = string.match(child.Name, "Stage(%d+)")
+            number = tonumber(number)
+
+            if number and number > highestNumber then
+                highestNumber = number
+                highest = child
+                offset = Vector3.new(-10, -8, 0)
+            end
+        end
+    end
+
+    -- Stage 13
+    local moreStage = map:FindFirstChild("MoreStageSoon")
+    if moreStage and moreStage:IsA("BasePart") then
+        highest = moreStage
+        highestNumber = 13
+        offset = Vector3.new(-40, -5, 44)
+    end
+
+    return highest, highestNumber, offset
+end
+
+-- ===== AUTO REBIRTH =====
+
+local function fireRebirth()
+    local button = player.PlayerGui
+        :FindFirstChild("Frames")
+        and player.PlayerGui.Frames:FindFirstChild("Rebirth")
+        and player.PlayerGui.Frames.Rebirth:FindFirstChild("Main")
+        and player.PlayerGui.Frames.Rebirth.Main:FindFirstChild("Frame")
+        and player.PlayerGui.Frames.Rebirth.Main.Frame:FindFirstChild("Rebirth")
+
+    if button and button:IsA("GuiButton") then
+        firesignal(button.MouseButton1Click)
+    end
+end
+
+-- ===== MAIN LOOP =====
+
+local lastHighestNumber = 0
+local lastChangeTime = tick()
+
+while true do
+    task.wait(0.1)
+
+    if humanoid.Health <= 0 then
+        print("Player chết, dừng.")
+        break
+    end
+
+    local highestStage, highestNumber, offset = getHighestStage()
+
+    if highestStage then
+
+        -- 🔥 Nếu Stage 13 → spam tele + spam rebirth
+        if highestNumber == 13 then
+            teleportTo(highestStage, offset)
+            fireRebirth()
+
+            if not map:FindFirstChild("MoreStageSoon") then
+                print("Stage 13 biến mất, dừng.")
+                break
+            end
+
+        else
+            -- Stage thường
+            if highestNumber > lastHighestNumber then
+                lastHighestNumber = highestNumber
+                lastChangeTime = tick()
+            end
+
+            teleportTo(highestStage, offset)
+
+            if tick() - lastChangeTime >= 3 then
+                print("Không có stage mới 3s, dừng.")
+                break
+            end
+        end
+    end
+end
