@@ -1,30 +1,56 @@
 local URL = "https://raw.githubusercontent.com/HFK1554vb/Mam-pothe/main/Teleport"
+local NOTIFY_URL = "https://raw.githubusercontent.com/HFK1554vb/Mam-pothe/refs/heads/main/Notification"
 
--- Xoá GUI cũ nếu có
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
 local core = game:GetService("CoreGui")
+local player = Players.LocalPlayer
+
+-- ===============================
+-- XOÁ GUI CŨ
+-- ===============================
 if core:FindFirstChild("TeleportAutoLoader") then
 	core.TeleportAutoLoader:Destroy()
 end
 
--- GUI Loading
+-- ===============================
+-- GUI LOADING
+-- ===============================
 local gui = Instance.new("ScreenGui")
 gui.Name = "TeleportAutoLoader"
 gui.ResetOnSpawn = false
 gui.Parent = core
 
 local label = Instance.new("TextLabel")
-label.Size = UDim2.new(0, 300, 0, 60) -- dài hơn
-label.Position = UDim2.new(0.5, -150, 0.4, 0)
+label.Size = UDim2.new(0, 300, 0, 60)
+label.Position = UDim2.new(0.5, -150, 0.4, -30) -- vị trí ban đầu
 label.BackgroundColor3 = Color3.fromRGB(25,25,25)
 label.TextColor3 = Color3.new(1,1,1)
 label.TextScaled = true
 label.Text = "Đang tải Teleport..."
 label.Font = Enum.Font.GothamBold
+label.BackgroundTransparency = 1
+label.TextTransparency = 1
 label.Parent = gui
 
 Instance.new("UICorner", label).CornerRadius = UDim.new(0,15)
 
--- LOAD
+-- Animation trượt lên 10% + fade in
+local tweenIn = TweenService:Create(
+	label,
+	TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+	{
+		Position = UDim2.new(0.5, -150, 0.3, -30),
+		BackgroundTransparency = 0,
+		TextTransparency = 0
+	}
+)
+
+tweenIn:Play()
+
+-- ===============================
+-- LOAD TELEPORT
+-- ===============================
 local success, err = pcall(function()
 	loadstring(game:HttpGet(URL))()
 end)
@@ -37,14 +63,17 @@ if not success then
 end
 
 -- ===============================
+-- LOAD NOTIFICATION TỪ GITHUB
+-- ===============================
+pcall(function()
+	_G.HFK_LoadSuccess = success
+	loadstring(game:HttpGet(NOTIFY_URL))()
+end)
+
+-- ===============================
 -- THÔNG BÁO CUỐI
 -- ===============================
 
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local player = Players.LocalPlayer
-
--- Xoá nếu tồn tại
 if player.PlayerGui:FindFirstChild("HFK_Notification") then
 	player.PlayerGui.HFK_Notification:Destroy()
 end
@@ -63,7 +92,6 @@ frame.Parent = notifyGui
 
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
--- Gradient đổi màu
 local gradient = Instance.new("UIGradient")
 gradient.Color = success and ColorSequence.new{
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,200,100)),
@@ -75,7 +103,6 @@ gradient.Color = success and ColorSequence.new{
 gradient.Rotation = 0
 gradient.Parent = frame
 
--- Text
 local text = Instance.new("TextLabel")
 text.Size = UDim2.new(1, -20, 1, 0)
 text.Position = UDim2.new(0, 10, 0, 0)
@@ -87,14 +114,14 @@ text.Font = Enum.Font.GothamBold
 text.Parent = frame
 
 -- Animation vào
-local tweenIn = TweenService:Create(
+local tweenNotifyIn = TweenService:Create(
 	frame,
 	TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
 	{Position = UDim2.new(0.5, -210, 0.1, 0)}
 )
-tweenIn:Play()
+tweenNotifyIn:Play()
 
--- Animation đổi màu liên tục
+-- Gradient xoay liên tục
 task.spawn(function()
 	while frame.Parent do
 		local tween = TweenService:Create(
