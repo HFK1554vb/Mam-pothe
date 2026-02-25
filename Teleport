@@ -24,12 +24,12 @@ button.Size = UDim2.fromOffset(40,40)
 button.AnchorPoint = Vector2.new(0.5,0.5)
 button.Position = UDim2.new(0.5,0,0.5,0)
 
-button.Text = "Theo"
+button.Text = "Theoheo"
 button.Font = Enum.Font.GothamBold
 button.TextScaled = true
 button.TextColor3 = Color3.new(1,1,1)
 
-button.BackgroundColor3 = Color3.fromRGB(0,170,255) -- xanh đẹp
+button.BackgroundColor3 = Color3.fromRGB(Dừng50,30) -- xanh đẹp
 button.Parent = gui
 button.Active = true
 button.Draggable = false
@@ -164,7 +164,7 @@ button.MouseButton1Click:Connect(function()
 		oldPosition = hrp.CFrame
 
 		toggled = true
-		button.Text = "Dừng"
+		button.Text = "S"
 
 		connection = RunService.Heartbeat:Connect(function()
 
@@ -175,7 +175,7 @@ button.MouseButton1Click:Connect(function()
 
 				-- target chết → dừng và quay về
 				toggled = false
-				button.Text = "Theo"
+				button.Text = "T"
 
 				if connection then
 					connection:Disconnect()
@@ -205,7 +205,7 @@ button.MouseButton1Click:Connect(function()
 	else
 
 		toggled = false
-		button.Text = "Theo"
+		button.Text = "T"
 
 		if connection then
 			connection:Disconnect()
@@ -226,6 +226,5 @@ end)
 
 player.CharacterAdded:Connect(function()
 	toggled = false
-	button.Text = "Theo"
-	currentTarget = nil
+	button.Text = "Tif	currentTarget = nil
 end)
