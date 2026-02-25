@@ -1,0 +1,129 @@
+-- =========================
+-- CONFIG
+-- =========================
+local FILE_NAME = "HFK_notice.json"
+local CURRENT_VERSION = 1
+local COOLDOWN = 10000000000 -- test
+local NOTICE_TEXT = "Hehe cái  này mới Sẽ có thêm cập nhật"
+
+local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
+local player = game.Players.LocalPlayer
+local now = os.time()
+
+local showGUI = true
+
+-- =========================
+-- ĐỌC FILE
+-- =========================
+if isfile(FILE_NAME) then
+	local success, data = pcall(function()
+		return HttpService:JSONDecode(readfile(FILE_NAME))
+	end)
+
+	if success and data then
+		if data.version ~= CURRENT_VERSION then
+			showGUI = true
+		elseif data.lastClosed then
+			if now - data.lastClosed < COOLDOWN then
+				showGUI = false
+			end
+		end
+	end
+end
+
+if not showGUI then
+	return
+end
+
+-- =========================
+-- TẠO GUI
+-- =========================
+local gui = Instance.new("ScreenGui")
+gui.Name = "HFK_NoticeGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player.PlayerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 320, 0, 220)
+frame.Position = UDim2.new(0.5, -160, 0.5, -110)
+frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+-- 🔴 VIỀN ĐỎ CHUYỂN
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 4
+stroke.Color = Color3.fromRGB(120, 0, 0)
+stroke.Parent = frame
+
+task.spawn(function()
+	while stroke.Parent do
+		local t1 = TweenService:Create(
+			stroke,
+			TweenInfo.new(1.2, Enum.EasingStyle.Linear),
+			{Color = Color3.fromRGB(255, 0, 0)}
+		)
+		t1:Play()
+		t1.Completed:Wait()
+
+		local t2 = TweenService:Create(
+			stroke,
+			TweenInfo.new(1.2, Enum.EasingStyle.Linear),
+			{Color = Color3.fromRGB(120, 0, 0)}
+		)
+		t2:Play()
+		t2.Completed:Wait()
+	end
+end)
+
+-- Tiêu đề
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -20, 0, 40)
+title.Position = UDim2.new(0, 10, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "Thông Báo"
+title.TextScaled = true
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+-- Nội dung
+local text = Instance.new("TextLabel")
+text.Size = UDim2.new(1, -20, 1, -60)
+text.Position = UDim2.new(0, 10, 0, 50)
+text.BackgroundTransparency = 1
+text.TextWrapped = true
+text.TextScaled = true
+text.TextColor3 = Color3.new(1,1,1)
+text.Font = Enum.Font.GothamBold
+text.Text = NOTICE_TEXT
+text.Parent = frame
+
+-- Nút X
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -35, 0, 5)
+close.BackgroundColor3 = Color3.fromRGB(200,50,50)
+close.Text = "X"
+close.TextColor3 = Color3.new(1,1,1)
+close.TextScaled = true
+close.Font = Enum.Font.GothamBold
+close.Parent = frame
+
+Instance.new("UICorner", close).CornerRadius = UDim.new(1, 0)
+
+-- =========================
+-- LƯU KHI BẤM X
+-- =========================
+close.MouseButton1Click:Connect(function()
+
+	writefile(FILE_NAME, HttpService:JSONEncode({
+		lastClosed = os.time(),
+		version = CURRENT_VERSION
+	}))
+
+	gui:Destroy()
+end)
