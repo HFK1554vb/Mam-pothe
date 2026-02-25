@@ -23,7 +23,7 @@ gui.Parent = core
 
 local label = Instance.new("TextLabel")
 label.Size = UDim2.new(0, 300, 0, 60)
-label.Position = UDim2.new(0.5, -150, 0.4, -30) -- vị trí ban đầu
+label.Position = UDim2.new(0.5, -150, 0.02, -30) -- vị trí ban đầu
 label.BackgroundColor3 = Color3.fromRGB(25,25,25)
 label.TextColor3 = Color3.new(1,1,1)
 label.TextScaled = true
