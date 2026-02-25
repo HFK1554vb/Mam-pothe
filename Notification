@@ -2,9 +2,9 @@
 -- CONFIG
 -- =========================
 local FILE_NAME = "HFK_notice.json"
-local CURRENT_VERSION = 1
+local CURRENT_VERSION = 2
 local COOLDOWN = 10000000000 -- test
-local NOTICE_TEXT = "Hehe cái  này mới Sẽ có thêm cập nhật"
+local NOTICE_TEXT = "mới Sẽ có thêm cập nhật"
 
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
