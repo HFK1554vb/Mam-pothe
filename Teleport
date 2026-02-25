@@ -20,7 +20,6 @@ gui.Parent = player:WaitForChild("PlayerGui")
 
 local button = Instance.new("TextButton")
 button.Size = UDim2.fromOffset(40,40)
-
 button.AnchorPoint = Vector2.new(0.5,0.5)
 button.Position = UDim2.new(0.5,0,0.5,0)
 
@@ -29,12 +28,200 @@ button.Font = Enum.Font.GothamBold
 button.TextScaled = true
 button.TextColor3 = Color3.new(1,1,1)
 
-button.BackgroundColor3 = Color3.fromRGB(Dừng50,30) -- xanh đẹp
+-- FIX RGB
+button.BackgroundColor3 = Color3.fromRGB(50,150,30)
 button.Parent = gui
 button.Active = true
 button.Draggable = false
 
 local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(1,0)
+corner.Parent = button
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(255,255,255)
+stroke.Parent = button
+
+-------------------------------------------------
+-- HOLD TO DRAG
+-------------------------------------------------
+
+local HOLD_TIME = 0.6
+local DRAG_COOLDOWN = 10
+
+local holding = false
+local holdStart = 0
+local dragging = false
+local lastMoveTime = 0
+local clickEnabled = true
+
+button.MouseButton1Down:Connect(function()
+	holding = true
+	holdStart = tick()
+
+	task.spawn(function()
+		while holding do
+			if tick() - holdStart >= HOLD_TIME then
+				button.Draggable = true
+				dragging = true
+				break
+			end
+			task.wait()
+		end
+	end)
+end)
+
+button.MouseButton1Up:Connect(function()
+	holding = false
+	button.Draggable = false
+	dragging = false
+	task.wait(0.1)
+	clickEnabled = true
+end)
+
+button:GetPropertyChangedSignal("Position"):Connect(function()
+	if dragging then
+		lastMoveTime = tick()
+		clickEnabled = false
+	end
+end)
+
+RunService.Heartbeat:Connect(function()
+	if not clickEnabled then
+		if tick() - lastMoveTime >= DRAG_COOLDOWN then
+			clickEnabled = true
+		end
+	end
+end)
+
+-------------------------------------------------
+-- TARGET SYSTEM
+-------------------------------------------------
+
+local function getHRP(model)
+	return model and model:FindFirstChild("HumanoidRootPart")
+end
+
+local function isValid(model)
+	return model
+		and model:FindFirstChild("Humanoid")
+		and model:FindFirstChild("HumanoidRootPart")
+		and model.Humanoid.Health > 0
+end
+
+local function findNearest()
+	local myChar = player.Character
+	if not myChar then return end
+
+	local myHRP = getHRP(myChar)
+	if not myHRP then return end
+
+	local nearest
+	local minDist
+
+	for _,obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("Model") and obj ~= myChar then
+			if isValid(obj) then
+				local hrp = getHRP(obj)
+				local dist = (myHRP.Position - hrp.Position).Magnitude
+				if not minDist or dist < minDist then
+					minDist = dist
+					nearest = hrp
+				end
+			end
+		end
+	end
+
+	return nearest
+end
+
+-------------------------------------------------
+-- FOLLOW LOGIC
+-------------------------------------------------
+
+local toggled = false
+local connection
+local currentTarget
+local oldPosition
+
+button.MouseButton1Click:Connect(function()
+
+	if not clickEnabled then return end
+
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+
+	if not toggled then
+
+		currentTarget = findNearest()
+		if not currentTarget then return end
+
+		oldPosition = hrp.CFrame
+
+		toggled = true
+		button.Text = "S"
+
+		connection = RunService.Heartbeat:Connect(function()
+
+			if not currentTarget
+				or not currentTarget.Parent
+				or not currentTarget.Parent:FindFirstChild("Humanoid")
+				or currentTarget.Parent.Humanoid.Health <= 0 then
+
+				toggled = false
+				button.Text = "T"
+
+				if connection then
+					connection:Disconnect()
+					connection = nil
+				end
+
+				camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+
+				if oldPosition and hrp then
+					hrp.CFrame = oldPosition
+				end
+
+				return
+			end
+
+			local ping = math.clamp(player:GetNetworkPing(),0.05,0.3)
+			local velocity = currentTarget.AssemblyLinearVelocity
+			local predicted = currentTarget.Position + velocity * ping
+			local behind = predicted - (currentTarget.CFrame.LookVector * 3)
+
+			hrp.CFrame = CFrame.new(behind, predicted)
+			camera.CameraSubject = currentTarget.Parent:FindFirstChild("Humanoid")
+		end)
+
+	else
+
+		toggled = false
+		button.Text = "T"
+
+		if connection then
+			connection:Disconnect()
+			connection = nil
+		end
+
+		camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+
+		if oldPosition and hrp then
+			hrp.CFrame = oldPosition
+		end
+	end
+end)
+
+-------------------------------------------------
+-- RESET (FIX SYNTAX)
+-------------------------------------------------
+
+player.CharacterAdded:Connect(function()
+	toggled = false
+	button.Text = "T"
+	currentTarget = nil
+end)local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(1,0) -- tròn hoàn toàn
 corner.Parent = button
 
