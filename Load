@@ -2,7 +2,6 @@ local URL = "https://raw.githubusercontent.com/HFK1554vb/Mam-pothe/main/Teleport
 
 local TweenService = game:GetService("TweenService")
 
--- Tránh trùng GUI
 if game:GetService("CoreGui"):FindFirstChild("TeleportAutoLoader") then
     game:GetService("CoreGui").TeleportAutoLoader:Destroy()
 end
@@ -12,29 +11,71 @@ gui.Name = "TeleportAutoLoader"
 gui.ResetOnSpawn = false
 gui.Parent = game:GetService("CoreGui")
 
--- Frame chính
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 320, 0, 120)
 frame.Position = UDim2.new(0.5, -160, 0.4, -60)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 frame.Parent = gui
 
-local frameCorner = Instance.new("UICorner")
-frameCorner.CornerRadius = UDim.new(0, 20)
-frameCorner.Parent = frame
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 20)
 
-local stroke = Instance.new("UIStroke")
+local stroke = Instance.new("UIStroke", frame)
 stroke.Color = Color3.fromRGB(60,60,60)
 stroke.Thickness = 1.5
-stroke.Parent = frame
 
--- Thanh nền (đặt trên cùng)
 local barBG = Instance.new("Frame")
 barBG.Size = UDim2.new(0.9, 0, 0.08, 0)
 barBG.Position = UDim2.new(0.05, 0, 0.08, 0)
 barBG.BackgroundColor3 = Color3.fromRGB(45,45,45)
 barBG.Parent = frame
+Instance.new("UICorner", barBG).CornerRadius = UDim.new(1,0)
 
+local bar = Instance.new("Frame")
+bar.Size = UDim2.new(0, 0, 1, 0)
+bar.BackgroundColor3 = Color3.fromRGB(0,170,255)
+bar.Parent = barBG
+Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0.6, 0)
+title.Position = UDim2.new(0, 0, 0.3, 0)
+title.BackgroundTransparency = 1
+title.Text = "Loading Teleport..."
+title.TextColor3 = Color3.new(1,1,1)
+title.TextScaled = true
+title.Parent = frame
+
+-- Tween chạy
+TweenService:Create(
+    bar,
+    TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+    {Size = UDim2.new(1, 0, 1, 0)}
+):Play()
+
+task.spawn(function()
+
+    local success, response = pcall(function()
+        return game:HttpGet(URL)
+    end)
+
+    if success and response and #response > 0 then
+        title.Text = "Loaded ✓"
+        pcall(function()
+            loadstring(response)()
+        end)
+    else
+        title.Text = "Failed ✗"
+        bar.BackgroundColor3 = Color3.fromRGB(200,60,60)
+    end
+
+    task.wait(1.2)
+
+    -- Destroy luôn không phụ thuộc tween
+    if gui then
+        gui:Destroy()
+    end
+
+end)
 local bgCorner = Instance.new("UICorner")
 bgCorner.CornerRadius = UDim.new(1,0)
 bgCorner.Parent = barBG
