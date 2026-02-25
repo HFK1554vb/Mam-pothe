@@ -222,3 +222,46 @@ player.CharacterAdded:Connect(function()
 	button.Text = "T"
 	currentTarget = nil
 end)
+task.spawn(function()
+
+    local Players = game:GetService("Players")
+
+    local function attach(player, character)
+        local humanoid = character:WaitForChild("Humanoid", 5)
+        if not humanoid then return end
+
+        humanoid.Died:Connect(function()
+
+            -- tránh tạo trùng
+            if character:FindFirstChild("DeadHighlight") then return end
+
+            local highlight = Instance.new("Highlight")
+            highlight.Name = "DeadHighlight"
+            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+            highlight.OutlineColor = Color3.new(1,1,1)
+            highlight.FillTransparency = 0.3
+            highlight.Parent = character
+
+        end)
+    end
+
+    -- người đang có trong game
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character then
+            attach(player, player.Character)
+        end
+
+        player.CharacterAdded:Connect(function(character)
+            attach(player, character)
+        end)
+    end
+
+    -- người mới vào
+    Players.PlayerAdded:Connect(function(player)
+        player.CharacterAdded:Connect(function(character)
+            attach(player, character)
+        end)
+    end)
+
+end)
+
