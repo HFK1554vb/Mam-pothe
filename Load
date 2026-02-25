@@ -34,3 +34,62 @@ gui:Destroy()
 if not success then
     warn(err)
 end
+task.spawn(function()
+
+    --// Services
+    local TweenService = game:GetService("TweenService")
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+
+    -- Xoá nếu đã tồn tại
+    if player.PlayerGui:FindFirstChild("HFK_Notification") then
+        player.PlayerGui.HFK_Notification:Destroy()
+    end
+
+    --// GUI
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "HFK_Notification"
+    gui.ResetOnSpawn = false
+    gui.Parent = player.PlayerGui
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 60)
+    frame.Position = UDim2.new(0.5, -150, -0.2, 0)
+    frame.BackgroundColor3 = success and Color3.fromRGB(40,120,40) or Color3.fromRGB(120,40,40)
+    frame.BorderSizePixel = 0
+    frame.Parent = gui
+
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+    local text = Instance.new("TextLabel")
+    text.Size = UDim2.new(1, -20, 1, 0)
+    text.Position = UDim2.new(0, 10, 0, 0)
+    text.BackgroundTransparency = 1
+    text.Text = success and "Loaded Successfully" or "Load Failed"
+    text.TextColor3 = Color3.new(1,1,1)
+    text.TextScaled = true
+    text.Font = Enum.Font.GothamBold
+    text.Parent = frame
+
+    local tweenIn = TweenService:Create(
+        frame,
+        TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {Position = UDim2.new(0.5, -150, 0.1, 0)}
+    )
+
+    tweenIn:Play()
+
+    task.wait(3)
+
+    local tweenOut = TweenService:Create(
+        frame,
+        TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+        {Position = UDim2.new(0.5, -150, -0.2, 0)}
+    )
+
+    tweenOut:Play()
+    tweenOut.Completed:Wait()
+
+    gui:Destroy()
+
+end)
