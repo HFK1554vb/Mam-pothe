@@ -1,35 +1,28 @@
 --// SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 -------------------------------------------------
--- GUI
+-- GUI (GIỮ NGUYÊN)
 -------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
--------------------------------------------------
--- BUTTON (GIỮA MÀN HÌNH)
--------------------------------------------------
-
 local button = Instance.new("TextButton")
 button.Size = UDim2.fromOffset(40,40)
 button.AnchorPoint = Vector2.new(0.5,0.5)
 button.Position = UDim2.new(0.5,0,0.5,0)
 
-button.Text = "Theoheo"
+button.Text = "T"
 button.Font = Enum.Font.GothamBold
 button.TextScaled = true
 button.TextColor3 = Color3.new(1,1,1)
-
--- FIX RGB
-button.BackgroundColor3 = Color3.fromRGB(50,150,30)
+button.BackgroundColor3 = Color3.fromRGB(255,0,0)
 button.Parent = gui
 button.Active = true
 button.Draggable = false
@@ -44,10 +37,10 @@ stroke.Color = Color3.fromRGB(255,255,255)
 stroke.Parent = button
 
 -------------------------------------------------
--- HOLD TO DRAG
+-- HOLD TO DRAG (GIỮ NGUYÊN)
 -------------------------------------------------
 
-local HOLD_TIME = 0.6
+local HOLD_TIME = 0
 local DRAG_COOLDOWN = 10
 
 local holding = false
@@ -88,10 +81,8 @@ button:GetPropertyChangedSignal("Position"):Connect(function()
 end)
 
 RunService.Heartbeat:Connect(function()
-	if not clickEnabled then
-		if tick() - lastMoveTime >= DRAG_COOLDOWN then
-			clickEnabled = true
-		end
+	if not clickEnabled and tick() - lastMoveTime >= DRAG_COOLDOWN then
+		clickEnabled = true
 	end
 end)
 
@@ -99,33 +90,40 @@ end)
 -- TARGET SYSTEM
 -------------------------------------------------
 
-local function getHRP(model)
-	return model and model:FindFirstChild("HumanoidRootPart")
+local function getHRP(character)
+	if not character then return nil end
+	return character:FindFirstChild("HumanoidRootPart")
 end
 
-local function isValid(model)
-	return model
-		and model:FindFirstChild("Humanoid")
-		and model:FindFirstChild("HumanoidRootPart")
-		and model.Humanoid.Health > 0
+local function isValid(character)
+	if not character then return false end
+	
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+
+	if not humanoid or not hrp then return false end
+	if humanoid.Health <= 0 then return false end
+	
+	return true
 end
 
 local function findNearest()
 	local myChar = player.Character
-	if not myChar then return end
-
+	if not isValid(myChar) then return nil end
+	
 	local myHRP = getHRP(myChar)
-	if not myHRP then return end
+	if not myHRP then return nil end
 
-	local nearest
-	local minDist
+	local nearest = nil
+	local minDist = math.huge
 
-	for _,obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("Model") and obj ~= myChar then
-			if isValid(obj) then
-				local hrp = getHRP(obj)
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character and isValid(plr.Character) then
+			
+			local hrp = getHRP(plr.Character)
+			if hrp then
 				local dist = (myHRP.Position - hrp.Position).Magnitude
-				if not minDist or dist < minDist then
+				if dist < minDist then
 					minDist = dist
 					nearest = hrp
 				end
@@ -141,9 +139,22 @@ end
 -------------------------------------------------
 
 local toggled = false
-local connection
-local currentTarget
-local oldPosition
+local connection = nil
+local currentTarget = nil
+local oldPosition = nil
+local lastTargetPosition = nil
+
+local MAX_SELF_VELOCITY = 120
+local MAX_TELEPORT_DISTANCE = 60
+local MAX_VELOCITY = 150
+
+local function setCollision(character, state)
+	for _,v in ipairs(character:GetDescendants()) do
+		if v:IsA("BasePart") then
+			v.CanCollide = state
+		end
+	end
+end
 
 button.MouseButton1Click:Connect(function()
 
@@ -152,51 +163,8 @@ button.MouseButton1Click:Connect(function()
 	local char = player.Character or player.CharacterAdded:Wait()
 	local hrp = char:WaitForChild("HumanoidRootPart")
 
-	if not toggled then
-
-		currentTarget = findNearest()
-		if not currentTarget then return end
-
-		oldPosition = hrp.CFrame
-
-		toggled = true
-		button.Text = "S"
-
-		connection = RunService.Heartbeat:Connect(function()
-
-			if not currentTarget
-				or not currentTarget.Parent
-				or not currentTarget.Parent:FindFirstChild("Humanoid")
-				or currentTarget.Parent.Humanoid.Health <= 0 then
-
-				toggled = false
-				button.Text = "T"
-
-				if connection then
-					connection:Disconnect()
-					connection = nil
-				end
-
-				camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
-
-				if oldPosition and hrp then
-					hrp.CFrame = oldPosition
-				end
-
-				return
-			end
-
-			local ping = math.clamp(player:GetNetworkPing(),0.05,0.3)
-			local velocity = currentTarget.AssemblyLinearVelocity
-			local predicted = currentTarget.Position + velocity * ping
-			local behind = predicted - (currentTarget.CFrame.LookVector * 3)
-
-			hrp.CFrame = CFrame.new(behind, predicted)
-			camera.CameraSubject = currentTarget.Parent:FindFirstChild("Humanoid")
-		end)
-
-	else
-
+	-- TẮT
+	if toggled then
 		toggled = false
 		button.Text = "T"
 
@@ -205,63 +173,84 @@ button.MouseButton1Click:Connect(function()
 			connection = nil
 		end
 
-		camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+		setCollision(char,true)
+		camera.CameraSubject = char:FindFirstChildOfClass("Humanoid")
 
-		if oldPosition and hrp then
+		if oldPosition then
 			hrp.CFrame = oldPosition
 		end
+		
+		return
 	end
-end)
 
--------------------------------------------------
--- RESET (FIX SYNTAX)
--------------------------------------------------
+	-- BẬT
+	currentTarget = findNearest()
+	if not currentTarget then return end
+
+	oldPosition = hrp.CFrame
+	lastTargetPosition = currentTarget.Position
+
+	toggled = true
+	button.Text = "S"
+	setCollision(char,false)
+
+	connection = RunService.Heartbeat:Connect(function()
+
+		if not currentTarget
+			or not currentTarget.Parent
+			or not currentTarget.Parent:FindFirstChildOfClass("Humanoid")
+			or currentTarget.Parent:FindFirstChildOfClass("Humanoid").Health <= 0 then
+			
+			toggled = false
+			button.Text = "T"
+
+			if connection then
+				connection:Disconnect()
+				connection = nil
+			end
+
+			setCollision(char,true)
+			return
+		end
+
+		local currentPos = currentTarget.Position
+
+		if hrp.AssemblyLinearVelocity.Magnitude > MAX_SELF_VELOCITY then
+			hrp.AssemblyLinearVelocity = Vector3.zero
+		end
+
+
+
+		lastTargetPosition = currentPos
+
+		if currentTarget.AssemblyLinearVelocity.Magnitude > MAX_VELOCITY then
+			toggled = false
+			button.Text = "T"
+
+			connection:Disconnect()
+			connection = nil
+			setCollision(char,true)
+			return
+		end
+
+		local ping = math.clamp(player:GetNetworkPing(),0.05,0.3)
+		local velocity = currentTarget.AssemblyLinearVelocity
+
+		local predicted = currentPos + velocity * ping
+		local behind = predicted - (currentTarget.CFrame.LookVector * 3)
+
+		hrp.CFrame = CFrame.new(behind, predicted)
+		camera.CameraSubject = currentTarget.Parent:FindFirstChildOfClass("Humanoid")
+
+	end)
+end)
 
 player.CharacterAdded:Connect(function()
 	toggled = false
+	if connection then
+		connection:Disconnect()
+		connection = nil
+	end
 	button.Text = "T"
 	currentTarget = nil
 end)
-task.spawn(function()
-
-    local Players = game:GetService("Players")
-
-    local function attach(player, character)
-        local humanoid = character:WaitForChild("Humanoid", 5)
-        if not humanoid then return end
-
-        humanoid.Died:Connect(function()
-
-            -- tránh tạo trùng
-            if character:FindFirstChild("DeadHighlight") then return end
-
-            local highlight = Instance.new("Highlight")
-            highlight.Name = "DeadHighlight"
-            highlight.FillColor = Color3.fromRGB(255, 0, 0)
-            highlight.OutlineColor = Color3.new(1,1,1)
-            highlight.FillTransparency = 0.3
-            highlight.Parent = character
-
-        end)
-    end
-
-    -- người đang có trong game
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player.Character then
-            attach(player, player.Character)
-        end
-
-        player.CharacterAdded:Connect(function(character)
-            attach(player, character)
-        end)
-    end
-
-    -- người mới vào
-    Players.PlayerAdded:Connect(function(player)
-        player.CharacterAdded:Connect(function(character)
-            attach(player, character)
-        end)
-    end)
-
-end)
-
