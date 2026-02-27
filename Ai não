@@ -1,0 +1,67 @@
+--========================--
+--      BRAIN CORE        --
+--========================--
+
+local Brain = {}
+Brain.__index = Brain
+
+-- Constructor
+function Brain.new()
+    local self = setmetatable({}, Brain)
+
+    self.Version = "1.0"
+    self.Memory = {}      -- Lưu dữ liệu chính
+    self.Index = {}       -- Danh sách key
+    self.Created = os.time()
+
+    return self
+end
+
+-- Thêm dữ liệu vào não
+function Brain:Add(key, value)
+    if not key or not value then return false end
+    if self.Memory[key] then return false end
+
+    self.Memory[key] = value
+    table.insert(self.Index, key)
+
+    return true
+end
+
+-- Lấy dữ liệu
+function Brain:Get(key)
+    return self.Memory[key]
+end
+
+-- Xoá dữ liệu
+function Brain:Remove(key)
+    if not self.Memory[key] then return false end
+
+    self.Memory[key] = nil
+
+    for i,v in ipairs(self.Index) do
+        if v == key then
+            table.remove(self.Index, i)
+            break
+        end
+    end
+
+    return true
+end
+
+-- Xuất thành file để upload GitHub
+function Brain:Export()
+    local text = "return {\n"
+    text = text .. "Version = \"" .. self.Version .. "\",\n"
+    text = text .. "Created = " .. self.Created .. ",\n"
+    text = text .. "Memory = {\n"
+
+    for k,v in pairs(self.Memory) do
+        text = text .. "    [\"" .. k .. "\"] = \"" .. v .. "\",\n"
+    end
+
+    text = text .. "}\n}"
+    return text
+end
+
+return Brain
