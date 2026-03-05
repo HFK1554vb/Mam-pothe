@@ -1,0 +1,86 @@
+-- LocalScript
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local ESP = {}
+
+local ESP_NAME = "UniqueLookESP" -- tên riêng để tránh trùng
+
+local function isLookingAtMe(player)
+	local myChar = LocalPlayer.Character
+	local char = player.Character
+	
+	if not myChar or not char then return false end
+	
+	local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	
+	if not myHRP or not hrp then return false end
+	
+	local look = hrp.CFrame.LookVector
+	local dir = (myHRP.Position - hrp.Position).Unit
+	
+	return look:Dot(dir) > 0.9
+end
+
+local function createESP(player, character)
+	if player == LocalPlayer then return end
+	
+	-- nếu script khác có highlight thì bỏ qua
+	if character:FindFirstChild(ESP_NAME) then
+		return
+	end
+	
+	local highlight = Instance.new("Highlight")
+	highlight.Name = ESP_NAME
+	highlight.FillTransparency = 0.5
+	highlight.OutlineTransparency = 0
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	
+	if player.Team then
+		highlight.FillColor = player.Team.TeamColor.Color
+	else
+		highlight.FillColor = Color3.new(1,1,1)
+	end
+	
+	highlight.Parent = character
+	
+	ESP[player] = highlight
+end
+
+local function setupPlayer(player)
+
+	player.CharacterAdded:Connect(function(char)
+		createESP(player,char)
+	end)
+
+	if player.Character then
+		createESP(player,player.Character)
+	end
+end
+
+for _,p in pairs(Players:GetPlayers()) do
+	setupPlayer(p)
+end
+
+Players.PlayerAdded:Connect(setupPlayer)
+
+RunService.RenderStepped:Connect(function()
+
+	for player,highlight in pairs(ESP) do
+		
+		if player.Character and highlight then
+			
+			if isLookingAtMe(player) then
+				highlight.FillTransparency = 0.2 + math.abs(math.sin(tick()*6))*0.3
+			else
+				highlight.FillTransparency = 0.5
+			end
+			
+		end
+		
+	end
+
+end)
