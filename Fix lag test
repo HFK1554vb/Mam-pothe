@@ -1,0 +1,80 @@
+--// BLOX FRUITS EXTREME ANTI LAG
+
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+
+task.wait(3)
+
+-- tối giản lighting
+Lighting.GlobalShadows = false
+Lighting.Brightness = 1
+Lighting.FogEnd = 9e9
+
+for _,v in pairs(Lighting:GetChildren()) do
+	if v:IsA("BloomEffect")
+	or v:IsA("BlurEffect")
+	or v:IsA("SunRaysEffect")
+	or v:IsA("ColorCorrectionEffect")
+	or v:IsA("DepthOfFieldEffect") then
+		v:Destroy()
+	end
+end
+
+-- chặn effect spawn
+Workspace.DescendantAdded:Connect(function(v)
+
+	if v:IsA("ParticleEmitter")
+	or v:IsA("Trail")
+	or v:IsA("Beam")
+	or v:IsA("Explosion")
+	or v:IsA("Smoke")
+	or v:IsA("Fire")
+	or v:IsA("Sparkles") then
+		v:Destroy()
+	end
+
+	if v:IsA("Decal") or v:IsA("Texture") then
+		v:Destroy()
+	end
+
+end)
+
+-- dọn map
+task.spawn(function()
+
+	local objects = Workspace:GetDescendants()
+
+	for i,v in ipairs(objects) do
+
+		-- giữ character mình
+		if v:IsDescendantOf(char) then
+			continue
+		end
+
+		-- giữ NPC
+		if v:FindFirstChildOfClass("Humanoid") then
+			continue
+		end
+
+		-- giữ humanoid
+		if v:IsA("Humanoid") then
+			continue
+		end
+
+		-- xóa map
+		if v:IsA("BasePart") or v:IsA("Model") then
+			v.Parent = nil
+		end
+
+		-- xử lý batch tránh freeze
+		if i % 80 == 0 then
+			task.wait()
+		end
+
+	end
+
+end)
