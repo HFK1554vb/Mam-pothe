@@ -1,4 +1,4 @@
-local URL = "https://raw.githubusercontent.com/HFK1554vb/Mam-pothe/main/Teleport"
+nólocal URL = "https://raw.githubusercontent.com/HFK1554vb/Mam-pothe/main/Teleport"
 local NOTIFY_URL = "https://raw.githubusercontent.com/HFK1554vb/Mam-pothe/refs/heads/main/Notification"
 
 local Players = game:GetService("Players")
@@ -107,7 +107,7 @@ local text = Instance.new("TextLabel")
 text.Size = UDim2.new(1, -20, 1, 0)
 text.Position = UDim2.new(0, 10, 0, 0)
 text.BackgroundTransparency = 1
-text.Text = success and "Phiên bản 1 đã tải thành công" or "Tải thất bại"
+text.Text = success and "Đã bảo là xoá rồi" or "Tải thất bại"
 text.TextColor3 = Color3.new(1,1,1)
 text.TextScaled = true
 text.Font = Enum.Font.GothamBold
