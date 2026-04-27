@@ -1,0 +1,153 @@
+local player = game.Players.LocalPlayer
+local invis_on = false
+local isWaiting = false 
+
+-- --- 1. TẠO GUI (Bên trái, ResetOnSpawn = false để die không mất) ---
+local screenGui = Instance.new("ScreenGui", player.PlayerGui)
+screenGui.Name = "MyInvisGui_Left"
+screenGui.ResetOnSpawn = false 
+
+-- Khung chính chứa các nút
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0, 190, 0, 60)
+mainFrame.Position = UDim2.new(0, 20, 0.5, -30) -- Vị trí bên trái màn hình
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
+
+-- Nút Tàng Hình (Lấy từ script cũ của bro)
+local toggleButton = Instance.new("TextButton", mainFrame)
+toggleButton.Size = UDim2.new(0, 140, 0, 40)
+toggleButton.Position = UDim2.new(0, 10, 0, 10)
+toggleButton.Text = "Tàng Hình: TẮT"
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextSize = 16
+Instance.new("UICorner", toggleButton)
+
+-- Nút Dấu Cộng (+) Đa năng: Vừa Kéo Vừa Thu Nhỏ
+local dragButton = Instance.new("TextButton", mainFrame)
+dragButton.Size = UDim2.new(0, 30, 0, 40)
+dragButton.Position = UDim2.new(0, 155, 0, 10)
+dragButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+dragButton.Text = "+"
+dragButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+dragButton.Font = Enum.Font.SourceSansBold
+dragButton.TextSize = 20
+Instance.new("UICorner", dragButton)
+
+-- --- 2. LOGIC KÉO THẢ & THU NHỎ (Hỗ trợ PC + Mobile) ---
+local UIS = game:GetService("UserInputService")
+local dragging, dragStart, startPos, combinedClick, isMinimized = false, nil, nil, false, false
+
+dragButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        combinedClick = true -- Giả định là click cho đến khi di chuyển
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        if delta.Magnitude > 7 then combinedClick = false end -- Nếu di chuyển quá 7px thì là kéo
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+dragButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+        if combinedClick then -- Nếu chỉ nhấn thả (không di chuyển) thì thu nhỏ
+            isMinimized = not isMinimized
+            toggleButton.Visible = not isMinimized
+            if isMinimized then
+                mainFrame.Size = UDim2.new(0, 50, 0, 60)
+                dragButton.Position = UDim2.new(0, 10, 0, 10)
+                dragButton.Text = "-"
+            else
+                mainFrame.Size = UDim2.new(0, 190, 0, 60)
+                dragButton.Position = UDim2.new(0, 155, 0, 10)
+                dragButton.Text = "+"
+            end
+        end
+    end
+end)
+
+-- --- 3. HÀM ẨN PART (Giữ nguyên của bro) ---
+local function setTransparency(char, val)
+    if not char then return end
+    for _, v in pairs(char:GetDescendants()) do
+        if v:IsA("BasePart") or v:IsA("Decal") or v:IsA("Texture") or v:IsA("MeshPart") then
+            if v.Name ~= "HumanoidRootPart" then
+                v.Transparency = val
+            end
+        end
+    end
+end
+
+-- --- 4. LOGIC TÀNG HÌNH (Bản gốc của bro 100%) ---
+local function toggleInvisibility()
+    -- Thêm check kéo để tránh bấm nhầm khi đang di chuyển GUI
+    if combinedClick == false and dragging == false then
+        -- Chỗ này để trống vì xử lý click ở dưới
+    end
+    
+    if isWaiting then return end 
+    
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    
+    isWaiting = true 
+    invis_on = not invis_on
+    
+    if invis_on then
+        local savedpos = character.HumanoidRootPart.CFrame
+        task.wait()
+        character:MoveTo(Vector3.new(-25.95, 84, 3537.55)) 
+        task.wait(0.15)
+        
+        local Seat = Instance.new('Seat', workspace)
+        Seat.Anchored = false
+        Seat.CanCollide = false
+        Seat.Name = 'invischair'
+        Seat.Transparency = 1 
+        Seat.Position = Vector3.new(-25.95, 84, 3537.55)
+        
+        for _, c in pairs(Seat:GetChildren()) do if c:IsA("SelectionBox") then c:Destroy() end end
+        
+        local Weld = Instance.new("Weld", Seat)
+        Weld.Part0 = Seat
+        Weld.Part1 = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+        
+        task.wait()
+        Seat.CFrame = savedpos
+        setTransparency(character, 0.5)
+        
+        toggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        toggleButton.Text = "Tàng Hình: BẬT"
+    else
+        local invisChair = workspace:FindFirstChild('invischair')
+        if invisChair then
+            invisChair:Destroy()
+        end
+        setTransparency(character, 0)
+        toggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+        toggleButton.Text = "Tàng Hình: TẮT"
+    end
+    
+    task.wait(0.5) 
+    isWaiting = false
+end
+
+toggleButton.MouseButton1Up:Connect(toggleInvisibility)
+
+player.CharacterAdded:Connect(function()
+    invis_on = false
+    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    toggleButton.Text = "Tàng Hình: TẮT"
+end)
