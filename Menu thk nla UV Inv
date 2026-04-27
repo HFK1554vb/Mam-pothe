@@ -1,0 +1,93 @@
+local player = game.Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
+
+-- --- 1. HÀM HIỆN THÔNG BÁO (Achievement) ---
+local function showAchievement(title, content)
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "AchievementSystem"
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+    screenGui.ResetOnSpawn = false
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 70)
+    frame.Position = UDim2.new(0.5, -150, 0.1, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    frame.BackgroundTransparency = 0.2
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    titleLabel.Position = UDim2.new(0, 0, 0, 5)
+    titleLabel.Text = "😑 " .. tostring(title)
+    titleLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+    titleLabel.Font = Enum.Font.SourceSansBold
+    titleLabel.TextSize = 20
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Parent = frame
+
+    local contentLabel = Instance.new("TextLabel")
+    contentLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    contentLabel.Position = UDim2.new(0, 0, 0.5, -5)
+    contentLabel.Text = tostring(content)
+    contentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    contentLabel.Font = Enum.Font.SourceSans
+    contentLabel.TextSize = 16
+    contentLabel.BackgroundTransparency = 1
+    contentLabel.Parent = frame
+
+    task.delay(3, function()
+        if screenGui then screenGui:Destroy() end
+    end)
+end
+
+-- --- 2. LOGIC LƯU TRẠNG THÁI 7 NGÀY (Sử dụng File Local) ---
+local fileName = "InvisScript_NotifyLog.txt"
+local function shouldShowNotify()
+    -- Kiểm tra xem trình thực thi có hỗ trợ đọc/ghi file không
+    if not (readfile and writefile) then return true end 
+    
+    local success, content = pcall(readfile, fileName)
+    local currentTime = os.time()
+    local sevenDaysInSeconds = 7 * 24 * 60 * 60
+
+    if success and content then
+        local lastNotifyTime = tonumber(content)
+        if lastNotifyTime and (currentTime - lastNotifyTime) < sevenDaysInSeconds then
+            return false -- Đã thông báo trong vòng 7 ngày, không hiện lại
+        end
+    end
+    
+    -- Lưu lại thời gian thông báo mới
+    writefile(fileName, tostring(currentTime))
+    return true
+end
+
+-- --- 3. LOAD SCRIPT TỪ GITHUB VÀ CHẠY ---
+local function loadExternalScript()
+    local url = "https://raw.githubusercontent.com/HFK1554vb/Mam-pothe/refs/heads/main/T%E1%BA%B1ng%20h%C3%ACnh"
+    local success, scriptContent = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if success and scriptContent then
+        -- Hiện thông báo nếu thỏa điều kiện 7 ngày
+        if shouldShowNotify() then
+            showAchievement("THÔNG BÁO", "Phiên bản V1 - Chạy từ GitHub thành công!")
+        end
+        
+        -- Chạy script đã load
+        local func, err = loadstring(scriptContent)
+        if func then
+            func()
+        else
+            warn("Lỗi loadstring: " .. tostring(err))
+        end
+    else
+        showAchievement("LỖI", "Không thể tải script từ GitHub!")
+    end
+end
+
+-- Chạy lệnh load
+loadExternalScript()
