@@ -1,0 +1,166 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- BIẾN TRẠNG THÁI AUTO HIT
+_G.AutoHitEnabled = false
+local ATTACK_SPEED = 0.05 
+
+----------------------------------------------------------------
+-- 1. KHỞI TẠO GUI CHÈN THẲNG VÀO PLAYERGUI (GIỮ NGUYÊN)
+----------------------------------------------------------------
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+if PlayerGui:FindFirstChild("MinimalistMobileGui_Fixed") then
+    PlayerGui.MinimalistMobileGui_Fixed:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MinimalistMobileGui_Fixed"
+ScreenGui.ResetOnSpawn = false 
+ScreenGui.DisplayOrder = 999999 
+ScreenGui.Parent = PlayerGui
+
+local MainButton = Instance.new("TextButton")
+MainButton.Name = "MainButton"
+MainButton.Parent = ScreenGui
+MainButton.Size = UDim2.new(0, 45, 0, 45) 
+
+MainButton.AnchorPoint = Vector2.new(0.5, 0.5)
+MainButton.Position = UDim2.new(0.5, 0, 0.5, 0) 
+
+MainButton.BackgroundColor3 = Color3.fromRGB(240, 50, 50) 
+MainButton.Text = "😝"
+MainButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+MainButton.Font = Enum.Font.SourceSansBold
+MainButton.TextSize = 14
+MainButton.ClipsDescendants = true
+MainButton.AutoButtonColor = false
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(1, 0)
+UICorner.Parent = MainButton
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(255, 255, 255)
+UIStroke.Thickness = 1.5
+UIStroke.Parent = MainButton
+
+----------------------------------------------------------------
+-- 2. LOGIC KÉO THẢ MƯỢT MÀ TRÊN MOBILE (GIỮ NGUYÊN)
+----------------------------------------------------------------
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    MainButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+MainButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainButton.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainButton.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+----------------------------------------------------------------
+-- 3. XỬ LÝ SỰ KIỆN BẬT / TẮT (TOGGLE)
+----------------------------------------------------------------
+MainButton.MouseButton1Click:Connect(function()
+    _G.AutoHitEnabled = not _G.AutoHitEnabled
+    if _G.AutoHitEnabled then
+        MainButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50) 
+    else
+        MainButton.BackgroundColor3 = Color3.fromRGB(240, 50, 50) 
+    end
+end)
+
+----------------------------------------------------------------
+-- 4. VÒNG LẶP AUTO HIT CHỈ QUÉT NPC KHÔNG PHẢI PLAYER + ANTI-RESET
+----------------------------------------------------------------
+local function attackAllNPCs()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        -- THAY ĐỔI: Thêm điều kiện Players:GetPlayerFromCharacter(obj.Parent) để bỏ qua người chơi khác hoàn toàn
+        if obj and obj:IsA("Humanoid") and obj.Parent and obj.Health > 0 and obj.Parent ~= char then
+            local isPlayer = Players:GetPlayerFromCharacter(obj.Parent)
+            
+            if not isPlayer then -- CHỈ QUÉT KHI ĐỐI TƯỢNG KHÔNG PHẢI LÀ PLAYER
+                local hrp = obj.Parent:FindFirstChild("HumanoidRootPart")
+                
+                if hrp and hrp:IsDescendantOf(workspace) then
+                    local npcPos = hrp.Position
+                    
+                    -- [KIỂU 1]: PRIMARY ATTACK (GIỮ NGUYÊN)
+                    local primaryArgs = {
+                        {{amount = 1, target = obj.Parent, is_friendly = false, part = hrp, cast_results = nil}},
+                        {{normal = Vector3.yAxis, part = hrp, distance = 1, material = Enum.Material.Granite, pos = npcPos}}
+                    }
+                    if char:FindFirstChild("primary") and obj.Health > 0 then
+                        char.primary.ServerEvents.RegisterHit:FireServer(unpack(primaryArgs))
+                    end
+                    
+                    -- [KIỂU 2]: MELEE ATTACK (GIỮ NGUYÊN)
+                    local meleeArgs = {
+                        {{amount = 1, target = obj.Parent, is_friendly = false, part = hrp, cast_results = nil}},
+                        {},
+                        [4] = true,
+                        [5] = false
+                    }
+                    if char:FindFirstChild("melee") and obj.Health > 0 then
+                        char.melee.ServerEvents.RegisterHit:FireServer(unpack(meleeArgs))
+                    end
+
+                    -- [KIỂU 3]: SECONDARY ATTACK (GIỮ NGUYÊN)
+                    local secondaryArgs = {
+                        {}, 
+                        {
+                            {
+                                normal = Vector3.new(-0.7900625467300415, 0.1490427553653717, -0.5946320295333862),
+                                part = hrp, 
+                                distance = 1, 
+                                material = Enum.Material.Glass,
+                                pos = npcPos 
+                            }
+                        }
+                    }
+                    if char:FindFirstChild("secondary") and obj.Health > 0 then
+                        char.secondary.ServerEvents.RegisterHit:FireServer(unpack(secondaryArgs))
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Khởi chạy vòng lặp ngầm ẩn hoàn toàn lỗi (GIỮ NGUYÊN)
+task.spawn(function()
+    while true do
+        if _G.AutoHitEnabled then
+            pcall(attackAllNPCs)
+        end
+        task.wait(ATTACK_SPEED)
+    end
+end)
